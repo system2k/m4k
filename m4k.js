@@ -553,9 +553,9 @@ var W = 0;
 var A = 0;
 var S = 0;
 var D = 0;
-var n9 = 0; // move on x axis
-var n10 = 0; // fall on y axis
-var n11 = 0; // move on z axis
+var moveX = 0; // move on x axis
+var moveY = 0; // fall on y axis
+var moveZ = 0; // move on z axis
 var Shift = 0;
 function systemClockCycle() {
 	
@@ -651,44 +651,41 @@ function systemClockCycle() {
 	var xCos = Math.cos(cameraRot[0]);
 	var xSin = Math.sin(cameraRot[0]);
 	  
-	var n24 = (W - S) * walkSpeed;
-	var n25 = (D - A) * walkSpeed;
-	var n26 = n9 * 0.5;
-	var n27 = n10 * 0.99;
-	var n28 = n11 * 0.5;
-	n9 = n26 + (xCos * n25 + xSin * n24);
-	n10 = n27 + 0.016;
-	n11 = n28 + (xSin * n25 - xCos * n24);
-	var n29 = 0;
+	var dirFwd = (W - S) * walkSpeed;
+	var dirSide = (D - A) * walkSpeed;
+	moveX = (moveX * 0.5) + (xCos * dirSide + xSin * dirFwd);
+	moveY = (moveY * 0.99) + 0.016;
+	moveZ = (moveZ * 0.5) + (xSin * dirSide - xCos * dirFwd);
 
-	MovePlayer: while ((n29 < 3)) { //Each loop is an axis (X, Y, Z)
-		var n30 = (-cameraPos[0]+1) + n9 * (((n29 + 0) % 3 / 2 | 0));
-		var n31 = (-cameraPos[1]) - n10 * (((n29 + 1) % 3 / 2 | 0));
-		var n32 = (-cameraPos[2]+1) + n11 * (((n29 + 2) % 3 / 2 | 0));
-		for (var n33 = 0; n33 < 12; ++n33) {
-			var n34 = ((n30 + (n33 >> 0 & 1) * 0.6 - 0.3)|0) - 1;
-			var n35 = ((n31 + ((n33 >> 2) - 1) * 0.8 + 0.65)|0) - 1;
-			var n36 = ((n32 + (n33 >> 1 & 1) * 0.6 - 0.3)|0) - 1;
-			var ax = n34;
-			var ay = n35;
-			var az = n36;
+	// cameraPos = [X, Y, Z]
+
+	//Each loop is an axis (X, Y, Z)
+	MovePlayer: for(var axis = 0; axis < 3; axis++) { 
+		var tempX = (-cameraPos[0]+1) + moveX * ((axis + 0) % 3 / 2 | 0); // --> 0 0 1
+		var tempY = (-cameraPos[1]) - moveY * ((axis + 1) % 3 / 2 | 0); //   --> 0 1 0
+		var tempZ = (-cameraPos[2]+1) + moveZ * ((axis + 2) % 3 / 2 | 0); // --> 1 0 0
+		for (var block = 0; block < 12; ++block) {
+			var offX = block % 2;
+			var offY = Math.floor(block / (2 * 2)) - 1; // subtract 1 to center it more
+			var offZ = Math.floor(block / 2) % 2;
+			var ax = ((tempX + offX * 0.6 - 0.3)|0) - 1;
+			var ay = ((tempY + offY * 0.8 + 0.65)|0) - 1;
+			var az = ((tempZ + offZ * 0.6 - 0.3)|0) - 1;
 			var blockData = getBlock(ax, ay, az);
-			if (ax < 0 || ay < 0 || az < 0 || ax >= 64 || ay >= 64 || az >= 64 || blockData > 0 || (Shift == 1 && n29 === 1)) { // Is there a collision?
-				if (n29 === 1) {
-					if (Jump > 0 && n10 > 0) { // if player is not in air, make player jump
-						n10 = -0.23;
+			if (ax < 0 || ay < 0 || az < 0 || ax >= 64 || ay >= 64 || az >= 64 || blockData > 0 || (Shift == 1 && axis === 1)) { // Is there a collision?
+				if (axis === 1) { // y-axis
+					if (Jump > 0 && moveY > 0) { // if player is not in air, make player jump
+						moveY = -0.23;
 					} else {
-						n10 = 0;
+						moveY = 0;
 					}
 				}
-				++n29;
-				continue MovePlayer; //Immediately stop and go back to top of the loop (if n29 < 3)
+				continue MovePlayer;
 			}
 		}
-		cameraPos[0] = -n30+1;
-		cameraPos[1] = -n31;
-		cameraPos[2] = -n32+1;
-		++n29;
+		cameraPos[0] = -tempX+1;
+		cameraPos[1] = -tempY;
+		cameraPos[2] = -tempZ+1;
 	}
 }
 
